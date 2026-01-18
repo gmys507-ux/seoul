@@ -27,9 +27,11 @@ def load_data():
     possible_paths = [
         # 경로 1: src/dashboard.py 기준, 상위 폴더의 data
         os.path.join(os.path.dirname(current_dir), "data", "01_seoul_living_population_cleaned.parquet"),
-        # 경로 2: GitHub 저장소가 ICB6이고 그 안에 260110_seoul_eda가 있는 경우
+        # 경로 2: Streamlit Cloud 환경 (저장소가 /mount/src/seoul에 마운트된 경우)
+        "/mount/src/seoul/260110_seoul_eda/data/01_seoul_living_population_cleaned.parquet",
+        # 경로 3: GitHub 저장소가 ICB6이고 그 안에 260110_seoul_eda가 있는 경우
         os.path.join(os.path.dirname(os.path.dirname(current_dir)), "260110_seoul_eda", "data", "01_seoul_living_population_cleaned.parquet"),
-        # 경로 3: 현재 디렉토리 기준 상대 경로
+        # 경로 4: 현재 디렉토리 기준 상대 경로
         os.path.join(current_dir, "..", "data", "01_seoul_living_population_cleaned.parquet"),
     ]
     
