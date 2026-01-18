@@ -16,17 +16,21 @@ st.set_page_config(
 # ------------------------------------------------------------------------------
 # 2. Data Loading & Preprocessing
 # ------------------------------------------------------------------------------
+import os
+
 @st.cache_data
 def load_data():
-    # 파일 경로 설정 (절대 경로 또는 상대 경로)
-    # 실제 환경에 맞게 경로를 수정해야 할 수 있습니다. 현재 구조 기준 설정.
-    file_path = "data/01_seoul_living_population_cleaned.parquet"
+    # 현재 파일(dashboard.py)의 위치를 기준으로 데이터 경로 설정
+    # 구조: src/dashboard.py, data/01_...
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(current_dir) # src의 상위 폴더
+    file_path = os.path.join(project_root, "data", "01_seoul_living_population_cleaned.parquet")
     
     try:
         df = pd.read_parquet(file_path)
     except FileNotFoundError:
-        # Fallback for dev environment paths if needed
-        df = pd.read_parquet("/Users/classting/Downloads/ICB6/260110_seoul_eda/data/01_seoul_living_population_cleaned.parquet")
+        st.error(f"데이터 파일을 찾을 수 없습니다: {file_path}")
+        st.stop()
     
     return df
 
