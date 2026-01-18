@@ -17,34 +17,68 @@ st.set_page_config(
 # 2. Data Loading & Preprocessing
 # ------------------------------------------------------------------------------
 import os
+from pathlib import Path
 
 @st.cache_data
 def load_data():
-    # 여러 가능한 경로를 시도 (로컬 환경 및 Streamlit Cloud 환경 대응)
-    current_dir = os.path.dirname(os.path.abspath(__file__))
+    """
+    데이터 파일을 로드합니다. 로컬 및 Streamlit Cloud 환경 모두 지원.
+    """
+    # 현재 파일의 위치 확인
+    current_file = Path(__file__).resolve()
+    current_dir = current_file.parent
     
-    # 가능한 경로들
+    # 디버깅: 현재 경로 정보 출력
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("**🔍 경로 디버깅 정보**")
+    st.sidebar.caption(f"현재 파일: `{current_file}`")
+    st.sidebar.caption(f"현재 디렉토리: `{current_dir}`")
+    
+    # 시도할 경로 목록 (우선순위 순)
     possible_paths = [
-        # 경로 1: src/dashboard.py 기준, 상위 폴더의 data
-        os.path.join(os.path.dirname(current_dir), "data", "01_seoul_living_population_cleaned.parquet"),
-        # 경로 2: Streamlit Cloud 환경 (저장소가 /mount/src/seoul에 마운트된 경우)
-        "/mount/src/seoul/260110_seoul_eda/data/01_seoul_living_population_cleaned.parquet",
-        # 경로 3: GitHub 저장소가 ICB6이고 그 안에 260110_seoul_eda가 있는 경우
-        os.path.join(os.path.dirname(os.path.dirname(current_dir)), "260110_seoul_eda", "data", "01_seoul_living_population_cleaned.parquet"),
-        # 경로 4: 현재 디렉토리 기준 상대 경로
-        os.path.join(current_dir, "..", "data", "01_seoul_living_population_cleaned.parquet"),
+        # 1. 현재 디렉토리에 직접 있는 경우
+        current_dir / "01_seoul_living_population_cleaned.parquet",
+        
+        # 2. 표준 구조: src/dashboard.py, data/파일
+        current_dir.parent / "data" / "01_seoul_living_population_cleaned.parquet",
+        
+        # 3. data 폴더가 현재 디렉토리 안에 있는 경우
+        current_dir / "data" / "01_seoul_living_population_cleaned.parquet",
+        
+        # 4. Streamlit Cloud 절대 경로 (이전 오류 메시지 기반)
+        Path("/mount/src/seoul/260110_seoul_eda/data/01_seoul_living_population_cleaned.parquet"),
+        
+        # 5. 상위 폴더에 260110_seoul_eda가 있는 경우
+        current_dir.parent.parent / "260110_seoul_eda" / "data" / "01_seoul_living_population_cleaned.parquet",
+        
+        # 6. 프로젝트 루트가 2단계 위인 경우
+        current_dir.parent / ".." / "data" / "01_seoul_living_population_cleaned.parquet",
     ]
     
-    # 존재하는 첫 번째 경로 사용
+    # 각 경로를 순회하며 파일 찾기
     for file_path in possible_paths:
-        if os.path.exists(file_path):
-            df = pd.read_parquet(file_path)
-            return df
+        try:
+            file_path = file_path.resolve()  # 절대 경로로 변환
+            if file_path.exists():
+                st.sidebar.success(f"✅ 데이터 파일 발견: `{file_path.name}`")
+                df = pd.read_parquet(file_path)
+                return df
+        except Exception as e:
+            continue
     
     # 모든 경로에서 파일을 찾지 못한 경우
-    st.error(f"데이터 파일을 찾을 수 없습니다. 시도한 경로들:")
-    for path in possible_paths:
-        st.error(f"  - {path}")
+    st.error("❌ **데이터 파일을 찾을 수 없습니다.**")
+    st.error("GitHub의 `data` 폴더에 `01_seoul_living_population_cleaned.parquet` 파일이 있는지 확인해주세요.")
+    
+    with st.expander("🔍 시도한 경로 목록 보기"):
+        for i, path in enumerate(possible_paths, 1):
+            try:
+                resolved = path.resolve()
+                exists = "✅ 존재" if path.exists() else "❌ 없음"
+                st.code(f"{i}. {exists}: {resolved}")
+            except:
+                st.code(f"{i}. ⚠️ 오류: {path}")
+    
     st.stop()
 
 @st.cache_data
