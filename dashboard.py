@@ -20,19 +20,30 @@ import os
 
 @st.cache_data
 def load_data():
-    # 현재 파일(dashboard.py)의 위치를 기준으로 데이터 경로 설정
-    # 구조: src/dashboard.py, data/01_...
+    # 여러 가능한 경로를 시도 (로컬 환경 및 Streamlit Cloud 환경 대응)
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.dirname(current_dir) # src의 상위 폴더
-    file_path = os.path.join(project_root, "data", "01_seoul_living_population_cleaned.parquet")
     
-    try:
-        df = pd.read_parquet(file_path)
-    except FileNotFoundError:
-        st.error(f"데이터 파일을 찾을 수 없습니다: {file_path}")
-        st.stop()
+    # 가능한 경로들
+    possible_paths = [
+        # 경로 1: src/dashboard.py 기준, 상위 폴더의 data
+        os.path.join(os.path.dirname(current_dir), "data", "01_seoul_living_population_cleaned.parquet"),
+        # 경로 2: GitHub 저장소가 ICB6이고 그 안에 260110_seoul_eda가 있는 경우
+        os.path.join(os.path.dirname(os.path.dirname(current_dir)), "260110_seoul_eda", "data", "01_seoul_living_population_cleaned.parquet"),
+        # 경로 3: 현재 디렉토리 기준 상대 경로
+        os.path.join(current_dir, "..", "data", "01_seoul_living_population_cleaned.parquet"),
+    ]
     
-    return df
+    # 존재하는 첫 번째 경로 사용
+    for file_path in possible_paths:
+        if os.path.exists(file_path):
+            df = pd.read_parquet(file_path)
+            return df
+    
+    # 모든 경로에서 파일을 찾지 못한 경우
+    st.error(f"데이터 파일을 찾을 수 없습니다. 시도한 경로들:")
+    for path in possible_paths:
+        st.error(f"  - {path}")
+    st.stop()
 
 @st.cache_data
 def preprocess_for_dong_time(df):
